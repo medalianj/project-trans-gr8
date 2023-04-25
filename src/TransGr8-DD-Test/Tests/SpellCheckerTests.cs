@@ -163,5 +163,19 @@ namespace TransGr8_DD_Test.Tests
 			// Assert
 			Assert.False(result);
 		}
-	}
+
+		[Test]
+        public void TestCanUserCastSpellReturnsFalseForNonExistentSpell()
+        {
+            // Arrange
+            SpellChecker spellChecker = new SpellChecker(spells);
+            string spellName = "Non Existent Spell";
+
+            // Act
+            bool result = spellChecker.CanUserCastSpell(user, spellName);
+
+            // Assert
+            Assert.False(result);
+        }
+    }
 }

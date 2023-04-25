@@ -1,6 +1,6 @@
 ﻿namespace TransGr8_DD_Test
 {
-	public class SpellChecker
+    public class SpellChecker
 	{
 		private readonly List<Spell> _spellList;
 
@@ -11,47 +11,85 @@
 
 		public bool CanUserCastSpell(User user, string spellName)
 		{
-			Spell spell = _spellList.Find(s => s.Name == spellName);
-			
-			if (user.Level < spell.Level)
-			{
-				return false;
-			}
-			if (spell.Components.Contains("V"))
-			{
-				if (!user.HasVerbalComponent)
-				{
-					return false;
-				}
-			}
-			else if (spell.Components.Contains("S"))
-			{
-				if (!user.HasSomaticComponent)
-				{
-					return false;
-				}
-			}
-			else if (spell.Components.Contains("M"))
-			{
-				if (!user.HasMaterialComponent)
-				{
-					return false;
-				}
-			}
-			if (user.Range < spell.Range)
-			{
-				return false;
-			}
-			if (spell.Duration.Contains("Concentration"))
-			{
-				if (!user.HasConcentration)
-				{
-					return false;
-				}
-			}
-			// Add additional checks as needed for specific saving throws or other requirements.
-			return true;
-		}
-		
-	}
+            if (_spellList == null)
+            {
+                throw new ArgumentNullException(nameof(_spellList));
+            }
+
+            Spell spell = _spellList.Find(s => s.Name == spellName || s.Name.Contains(spellName));
+
+            var isUserAllowedToCastSpell = (user != null && spell != null) ? VerifyUserAbilityToCastSpell(user, spell) : false;
+
+            return isUserAllowedToCastSpell;
+        }
+
+		public bool VerifyUserAbilityToCastSpell(User user, Spell spell)
+		{
+            var isUserLevelOrRangeLowerThanSpell = new UserLevelAndRangeChecker().Verify(user, spell);
+            if (isUserLevelOrRangeLowerThanSpell)
+            {
+                return false;
+            }
+
+            var isSpellComponentAndUserAbilitiesUnmatching = new SpellComponentsAndUserAbilitiesChecker().Verify(user, spell);
+            if (isSpellComponentAndUserAbilitiesUnmatching)
+            {
+                return false;
+            }
+
+            var isSpellDurationAndUserAbilitiesUnmatching = new SpellComponentsAndUserAbilitiesChecker().Verify(user, spell);
+            if (isSpellDurationAndUserAbilitiesUnmatching)
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    public interface IChecker
+    {
+        bool Verify(User user, Spell spell);
+    }
+
+    public class UserLevelAndRangeChecker : IChecker
+    {
+        public bool Verify(User user, Spell spell)
+        {
+            return user.Level < spell.Level || user.Range < spell.Range;
+        }
+    }
+
+    public class SpellComponentsAndUserAbilitiesChecker : IChecker
+    {
+        public bool Verify(User user, Spell spell)
+        {
+            if (spell.Components == null)
+            {
+                throw new ArgumentNullException(nameof(spell.Components));
+            }
+
+            if (spell.Components.Contains("V") && !user.HasVerbalComponent)
+            {
+                return true;
+            }
+            else if (spell.Components.Contains("S") && !user.HasSomaticComponent)
+            {
+                return true;
+            }
+            else if (spell.Components.Contains("M") && !user.HasMaterialComponent)
+            {
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    public class SpellDurationAndUserAbilitiesChecker : IChecker
+    {
+        public bool Verify(User user, Spell spell)
+        {
+            return spell.Duration.Contains("Concentration") && !user.HasConcentration;
+        }
+    }
 }
